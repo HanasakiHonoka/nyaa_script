@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chrome插件图标生成器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            margin: 10px 0;
+        }
+        .icon-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .icon-item {
+            text-align: center;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        button:hover {
+            background-color: #3367d6;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chrome插件图标生成器</h1>
+    <p>此页面可以帮助您为Chrome插件生成所需的图标文件。您可以选择一个颜色，然后点击"生成图标"按钮来创建简单的图标。</p>
+    
+    <div>
+        <label for="iconColor">选择图标颜色：</label>
+        <input type="color" id="iconColor" value="#4285f4">
+        <button onclick="generateIcons()">生成图标</button>
+    </div>
+    
+    <div class="icon-container" id="iconContainer">
+        <!-- 图标将在这里显示 -->
+    </div>
+    
+    <h2>如何使用生成的图标</h2>
+    <ol>
+        <li>点击"生成图标"按钮后，将会显示三种尺寸的图标</li>
+        <li>右键点击每个图标，选择"图片另存为..."</li>
+        <li>将图标保存到插件的images文件夹中，分别命名为icon16.png、icon48.png和icon128.png</li>
+    </ol>
+    
+    <h2>或者使用自定义图标</h2>
+    <p>您也可以使用自己设计的图标。只需确保创建以下尺寸的图标文件：</p>
+    <ul>
+        <li>16x16像素 - 保存为 images/icon16.png</li>
+        <li>48x48像素 - 保存为 images/icon48.png</li>
+        <li>128x128像素 - 保存为 images/icon128.png</li>
+    </ul>
+    
+    <script>
+        function generateIcons() {
+            const color = document.getElementById('iconColor').value;
+            const sizes = [16, 48, 128];
+            const container = document.getElementById('iconContainer');
+            
+            // 清除之前的图标
+            container.innerHTML = '';
+            
+            // 为每个尺寸生成图标
+            sizes.forEach(size => {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                
+                // 绘制背景
+                ctx.fillStyle = color;
+                ctx.fillRect(0, 0, size, size);
+                
+                // 绘制字母"P"（代表Preview）
+                ctx.fillStyle = 'white';
+                ctx.font = `bold ${Math.floor(size * 0.7)}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('P', size / 2, size / 2);
+                
+                // 创建图标项
+                const iconItem = document.createElement('div');
+                iconItem.className = 'icon-item';
+                
+                // 添加图标
+                iconItem.appendChild(canvas);
+                
+                // 添加尺寸标签
+                const label = document.createElement('p');
+                label.textContent = `${size}x${size}`;
+                iconItem.appendChild(label);
+                
+                // 添加下载链接
+                const downloadLink = document.createElement('a');
+                downloadLink.href = canvas.toDataURL('image/png');
+                downloadLink.download = `icon${size}.png`;
+                downloadLink.textContent = '下载图标';
+                iconItem.appendChild(downloadLink);
+                
+                // 添加到容器
+                container.appendChild(iconItem);
+            });
+        }
+    </script>
+</body>
+</html>

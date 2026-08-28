@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Sukebei Preview",
+  "version": "1.0",
+  "description": "在鼠标悬停在sukebei.nyaa.si链接上时显示预览",
+  "icons": {
+    "16": "images/icon16.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://sukebei.nyaa.si/*"],
+      "js": ["cache.js", "content.js"],
+      "css": ["styles.css"]
+    }
+  ],
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "*://sukebei.nyaa.si/*",
+    "*://hentai-covers.site/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

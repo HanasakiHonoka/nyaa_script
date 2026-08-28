@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sukebei Preview 插件测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .test-links {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .test-links a {
+            display: block;
+            margin: 10px 0;
+            color: #337ab7;
+            text-decoration: none;
+        }
+        .test-links a:hover {
+            text-decoration: underline;
+        }
+        .note {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px 15px;
+            margin: 20px 0;
+        }
+        .instructions {
+            background-color: #e9f7ef;
+            border-left: 4px solid #2ecc71;
+            padding: 10px 15px;
+            margin: 20px 0;
+        }
+        code {
+            background-color: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sukebei Preview 插件测试页面</h1>
+    
+    <div class="instructions">
+        <h2>测试说明</h2>
+        <p>此页面用于测试 Sukebei Preview Chrome 插件的功能。由于插件设计为在 sukebei.nyaa.si 网站上运行，您需要按照以下步骤进行测试：</p>
+        <ol>
+            <li>安装插件（按照 README.md 中的说明）</li>
+            <li>修改插件的 manifest.json 文件，添加此测试页面到 matches 列表中</li>
+            <li>重新加载插件</li>
+            <li>在此页面上测试功能</li>
+        </ol>
+    </div>
+    
+    <h2>如何修改 manifest.json</h2>
+    <p>打开 manifest.json 文件，找到 content_scripts 部分，将 matches 数组修改为：</p>
+    <pre><code>
+"matches": [
+    "*://sukebei.nyaa.si/*",
+    "file:///*test_page.html"
+]
+    </code></pre>
+    <p>这将允许插件在本地测试页面上运行。</p>
+    
+    <div class="note">
+        <p><strong>注意：</strong> 在实际使用时，您应该将 matches 恢复为原始设置，只包含 "*://sukebei.nyaa.si/*"。</p>
+    </div>
+    
+    <h2>测试链接</h2>
+    <p>以下是一些模拟的链接，用于测试插件功能。将鼠标悬停在这些链接上，应该会显示预览窗口（如果插件正确配置）：</p>
+    
+    <div class="test-links">
+        <a href="https://sukebei.nyaa.si/view/1234567">https://sukebei.nyaa.si/view/1234567 - 测试链接 1</a>
+        <a href="https://sukebei.nyaa.si/view/7654321">https://sukebei.nyaa.si/view/7654321 - 测试链接 2</a>
+        <a href="https://sukebei.nyaa.si/view/9876543">https://sukebei.nyaa.si/view/9876543 - 测试链接 3</a>
+        <a href="https://sukebei.nyaa.si/download/1234567">这个链接不应该触发预览（不是 /view/ 链接）</a>
+        <a href="https://example.com/view/1234567">这个链接也不应该触发预览（不是 sukebei.nyaa.si 域名）</a>
+    </div>
+    
+    <h2>预期行为</h2>
+    <ul>
+        <li>当鼠标悬停在以 "https://sukebei.nyaa.si/view/" 开头的链接上时，应该会出现预览窗口</li>
+        <li>预览窗口应该显示在鼠标附近</li>
+        <li>当鼠标移开链接时，预览窗口应该消失</li>
+        <li>对于不符合条件的链接，不应该显示预览窗口</li>
+    </ul>
+    
+    <div class="note">
+        <p><strong>注意：</strong> 在本地测试页面上，插件可能无法获取实际的页面内容，因为浏览器的安全策略可能会阻止跨域请求。在实际的 sukebei.nyaa.si 网站上使用时，这个问题不会出现。</p>
+    </div>
+    
+    <h2>故障排除</h2>
+    <p>如果预览功能不工作，请检查：</p>
+    <ol>
+        <li>插件是否已正确安装并启用</li>
+        <li>manifest.json 是否已正确修改以包含测试页面</li>
+        <li>浏览器控制台是否有任何错误消息（按 F12 打开开发者工具）</li>
+    </ol>
+</body>
+</html>
