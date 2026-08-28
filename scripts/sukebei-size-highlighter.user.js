@@ -7,6 +7,8 @@
 // @include      *://sukebei.nyaa.si/*
 // @run-at       document-idle
 // @grant        none
+// @downloadURL  https://raw.githubusercontent.com/HanasakiHonoka/nyaa_script/main/scripts/sukebei-size-highlighter.user.js
+// @updateURL    https://raw.githubusercontent.com/HanasakiHonoka/nyaa_script/main/scripts/sukebei-size-highlighter.user.js
 // ==/UserScript==
 
 (function () {

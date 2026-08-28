@@ -13,6 +13,8 @@
 // @connect      sukebei.nyaa.si
 // @connect      hentai-covers.site
 // @run-at       document-idle
+// @downloadURL  https://raw.githubusercontent.com/HanasakiHonoka/nyaa_script/main/scripts/sukebei-preview.user.js
+// @updateURL    https://raw.githubusercontent.com/HanasakiHonoka/nyaa_script/main/scripts/sukebei-preview.user.js
 // ==/UserScript==
 
 (function () {
