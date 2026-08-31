@@ -1,12 +1,10 @@
 // ==UserScript==
 // @name         Sukebei Batch Preview
 // @namespace    https://sukebei.nyaa.si/
-// @version      1.1
-// @description  在 sukebei 列表页插入封面缩略图列与多选列，支持批量复制磁力链接
+// @version      1.2
+// @description  在 sukebei 列表页插入封面缩略图列与多选列，支持批量复制磁力链接、按需加载封面（与 Sukebei Preview 共用缓存）
 // @match        *://sukebei.nyaa.si/*
 // @grant        GM_xmlhttpRequest
-// @grant        GM_setValue
-// @grant        GM_getValue
 // @grant        GM_addStyle
 // @grant        GM_setClipboard
 // @connect      hentai-covers.site
@@ -21,8 +19,10 @@
   const table = document.querySelector('table.torrent-list');
   if (!table || !table.querySelector('thead .hdr-category')) return;
 
-  // v2：v1 里存满了被 '**' bug 误判为“无封面”的 null 负缓存，必须整体作废
-  const CACHE_KEY = 'sp_img_cache_v2';
+  // 与 Sukebei Preview 脚本共用同一份封面缓存：
+  // GM 存储按脚本隔离无法共享，改按源站存 localStorage；u 为 null 表示确认无封面。
+  // 旧的 sp_img_cache_v1/v2（GM 存储）随之整体作废。
+  const STORE_KEY = 'sukebei_cover_cache_v1';
   const CACHE_TTL = 30 * 24 * 60 * 60 * 1000;
   const COVER_HOSTS = ['hentai-covers.site'];
   // 描述里封面链接常被写成 markdown 粗体 **https://..**，星号不能进字符类，
@@ -138,20 +138,32 @@
 
   // --- 缓存：一个对象存全部映射；无封面的结果也要缓存，避免每次翻页重复请求 ---
   const cache = (() => {
-    const stored = GM_getValue(CACHE_KEY, null);
+    let map;
+    try {
+      map = new Map(Object.entries(JSON.parse(localStorage.getItem(STORE_KEY) || '{}')));
+    } catch {
+      map = new Map();
+    }
     const now = Date.now();
-    const map = new Map(
-      Object.entries(stored || {}).filter(([, v]) => now - v.t < CACHE_TTL)
-    );
-    let dirty = false;
+    for (const [k, v] of map) if (!v || now - v.t >= CACHE_TTL) map.delete(k);
+    const dirty = new Map();
     return {
       has: (k) => map.has(k),
       get: (k) => map.get(k).u,
-      set(k, u) { map.set(k, { u, t: Date.now() }); dirty = true; },
+      set(k, u) {
+        const entry = { u, t: Date.now() };
+        map.set(k, entry);
+        dirty.set(k, entry);
+      },
+      // 悬停预览脚本与本脚本同页运行，写回前先读最新值合并，避免互相覆盖
       flush() {
-        if (!dirty) return;
-        GM_setValue(CACHE_KEY, Object.fromEntries(map));
-        dirty = false;
+        if (!dirty.size) return;
+        let store;
+        try { store = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); }
+        catch { store = {}; }
+        for (const [k, v] of dirty) store[k] = v;
+        localStorage.setItem(STORE_KEY, JSON.stringify(store));
+        dirty.clear();
       },
     };
   })();
@@ -257,6 +269,7 @@
     ['fa-retweet', '反选', () => { rows.forEach((r) => { r.box.checked = !r.box.checked; }); refresh(); }],
     ['fa-square-o', '清空选择', () => setAll(false)],
     ['fa-files-o', '复制选中磁力链接', copySelected],
+    ['fa-picture-o', '加载选中封面', loadSelectedCovers],
   ];
 
   for (const [icon, label, handler] of ACTIONS) {
@@ -308,12 +321,12 @@
     countEl.textContent = `已复制 ${picked.length} 条`;
   }
 
-  // --- 缩略图：滚到附近才排队，且限制并发 ---
+  // --- 缩略图：默认不请求，只展示已缓存的；点“加载选中封面”才限并发抓取 ---
   const CONCURRENCY = 3;
-  const byCell = new Map(rows.map((r) => [r.previewTd, r]));
   const pending = [];
   const queued = new Set();
   let running = 0;
+  let batchLoading = 0;
 
   function pump() {
     while (running < CONCURRENCY && pending.length) {
@@ -324,32 +337,55 @@
     }
   }
 
+  function loadSelectedCovers() {
+    const picked = rows.filter((r) => r.box.checked);
+    if (!picked.length) {
+      countEl.textContent = '未选择';
+      return;
+    }
+    let fresh = 0;
+    for (const r of picked) {
+      if (cache.has(r.viewUrl)) {
+        const cached = cache.get(r.viewUrl);
+        if (cached && !r.previewTd.querySelector('img')) paint(r.previewTd, cached);
+        continue;
+      }
+      if (queued.has(r) || r.loading) continue;
+      queued.add(r);
+      pending.push(r);
+      fresh++;
+    }
+    if (!fresh) {
+      countEl.textContent = '封面均已缓存';
+      return;
+    }
+    batchLoading += fresh;
+    countEl.textContent = `正在加载 ${fresh} 张封面`;
+    pump();
+  }
+
   async function loadRow(r) {
+    r.loading = true;
     r.previewTd.classList.add('is-loading');
     try {
       const url = await resolveCover(r.viewUrl);
       cache.set(r.viewUrl, url);
       if (url) paint(r.previewTd, url);
     } catch (err) {
-      cache.set(r.viewUrl, null);
+      // 网络/解析错误不进缓存，之后点“加载选中封面”还能重试
       console.warn('[Sukebei Preview]', r.viewUrl, err.message);
     } finally {
+      r.loading = false;
       r.previewTd.classList.remove('is-loading');
       cache.flush();
+      if (batchLoading > 0 && --batchLoading === 0) {
+        countEl.textContent = '封面加载完成';
+      }
     }
   }
 
-  const visible = new IntersectionObserver((entries) => {
-    for (const entry of entries) {
-      if (!entry.isIntersecting) continue;
-      const r = byCell.get(entry.target);
-      visible.unobserve(entry.target);
-      if (!queued.has(r)) { queued.add(r); pending.push(r); pump(); }
-    }
-  }, { rootMargin: '400px 0px' });
-
   for (const r of rows) {
-    if (!cache.has(r.viewUrl)) { visible.observe(r.previewTd); continue; }
+    if (!cache.has(r.viewUrl)) continue;
     const cached = cache.get(r.viewUrl);
     if (cached) paint(r.previewTd, cached);
   }

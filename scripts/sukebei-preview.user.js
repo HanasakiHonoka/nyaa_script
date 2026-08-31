@@ -1,14 +1,10 @@
 // ==UserScript==
 // @name         Sukebei Preview
 // @namespace    https://sukebei.nyaa.si/
-// @version      1.0
-// @description  鼠标悬停在sukebei.nyaa.si种子链接上时显示封面预览
+// @version      1.1
+// @description  鼠标悬停在sukebei.nyaa.si种子链接上时显示封面预览（与 Batch Preview 共用封面缓存）
 // @match        *://sukebei.nyaa.si/*
 // @grant        GM_xmlhttpRequest
-// @grant        GM_setValue
-// @grant        GM_getValue
-// @grant        GM_deleteValue
-// @grant        GM_listValues
 // @grant        GM_addStyle
 // @connect      sukebei.nyaa.si
 // @connect      hentai-covers.site
@@ -20,8 +16,11 @@
 (function () {
   'use strict';
 
-  const CACHE_PREFIX = 'img_cache_';
-  const CACHE_TTL = 3 * 24 * 60 * 60 * 1000;
+  // 与 Sukebei Batch Preview 脚本共用同一份封面缓存：
+  // GM 存储按脚本隔离无法共享，改按源站存 localStorage；u 为 null 表示确认无封面。
+  // 旧的 img_cache_*（GM 存储）随之作废。
+  const STORE_KEY = 'sukebei_cover_cache_v1';
+  const CACHE_TTL = 30 * 24 * 60 * 60 * 1000;
   const HOVER_DELAY = 300;
 
   // --- Styles ---
@@ -81,30 +80,39 @@
   `);
 
   // --- Cache ---
+  function readStore() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); }
+    catch { return {}; }
+  }
+
+  function writeStore(store) {
+    localStorage.setItem(STORE_KEY, JSON.stringify(store));
+  }
+
+  // 命中返回图片地址；确认无封面返回 null；未命中返回 undefined
   function getFromCache(pageUrl) {
-    const key = CACHE_PREFIX + pageUrl;
-    const item = GM_getValue(key, null);
-    if (!item) return null;
-    if (Date.now() - item.ts > CACHE_TTL) {
-      GM_deleteValue(key);
-      return null;
-    }
-    return item.imgUrl;
+    const item = readStore()[pageUrl];
+    if (!item || Date.now() - item.t > CACHE_TTL) return undefined;
+    return item.u;
   }
 
   function addToCache(pageUrl, imgUrl) {
-    GM_setValue(CACHE_PREFIX + pageUrl, { imgUrl, ts: Date.now() });
+    const store = readStore();
+    store[pageUrl] = { u: imgUrl, t: Date.now() };
+    writeStore(store);
   }
 
   function cleanExpiredCache() {
-    const keys = GM_listValues();
-    for (const key of keys) {
-      if (!key.startsWith(CACHE_PREFIX)) continue;
-      const item = GM_getValue(key, null);
-      if (!item || Date.now() - item.ts > CACHE_TTL) {
-        GM_deleteValue(key);
+    const store = readStore();
+    let changed = false;
+    for (const key of Object.keys(store)) {
+      const item = store[key];
+      if (!item || Date.now() - item.t > CACHE_TTL) {
+        delete store[key];
+        changed = true;
       }
     }
+    if (changed) writeStore(store);
   }
 
   // --- Network ---
@@ -176,8 +184,9 @@
     container.style.display = 'block';
 
     const cached = getFromCache(url);
-    if (cached) {
-      showImage(cached);
+    if (cached !== undefined) {
+      if (cached) showImage(cached);
+      else container.innerHTML = '<div class="error">该种子没有封面</div>';
       return;
     }
 
@@ -194,6 +203,8 @@
         }
       }
 
+      // 确认无封面也写入负缓存，避免两个脚本重复请求；网络错误不缓存，下次悬停可重试
+      addToCache(url, null);
       showFallback(doc);
     } catch {
       container.innerHTML = '<div class="error">加载预览失败</div>';
