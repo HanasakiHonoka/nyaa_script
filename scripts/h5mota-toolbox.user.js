@@ -12,6 +12,8 @@
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
+// @downloadURL  https://raw.githubusercontent.com/HanasakiHonoka/nyaa_script/main/scripts/h5mota-toolbox.user.js
+// @updateURL    https://raw.githubusercontent.com/HanasakiHonoka/nyaa_script/main/scripts/h5mota-toolbox.user.js
 // ==/UserScript==
 
 (function () {
