@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         H5魔塔工具箱
 // @namespace    hsjje-h5mota-toolbox
-// @version      2.2.2
+// @version      2.2.3
 // @description  血瓶拾取/使用倍率 + 楼层传送器无视楼梯限制 + 扣血转加血(战斗) + 回春触发计算 + 楼层敌人统计 + 撤销悬浮按钮 + 楼传滚动条；配置按魔塔独立存储，新塔默认全关。适用于 HTML5魔塔引擎（土豆魔塔）游戏
 // @author       hsjje
 // @match        http://127.0.0.1/*
@@ -753,7 +753,7 @@
     background:rgba(20,22,28,.92); color:#dfe3ea; border:1px solid #4a5060; border-radius:8px;
     width:224px; user-select:none; box-shadow:0 4px 16px rgba(0,0,0,.5); }
 #${PANEL_ID} .mtb-head { padding:5px 8px; cursor:move; border-bottom:1px solid #3a4050;
-    display:flex; justify-content:space-between; align-items:center; }
+    display:flex; justify-content:space-between; align-items:center; touch-action:none; }
 #${PANEL_ID} .mtb-title { font-weight:bold; color:#ff9a9a; }
 #${PANEL_ID} .mtb-min { cursor:pointer; padding:0 5px; color:#8a93a5; }
 #${PANEL_ID} .mtb-body { padding:8px; }
@@ -931,23 +931,42 @@
     (function () {
         const head = panel.querySelector('.mtb-head');
         let drag = null;
+        const clampPos = function (x, y) {
+            return {
+                x: Math.max(0, Math.min(x, window.innerWidth - panel.offsetWidth)),
+                y: Math.max(0, Math.min(y, window.innerHeight - panel.offsetHeight))
+            };
+        };
         head.addEventListener('pointerdown', function (e) {
             // 按在折叠按钮上时不启动拖动：否则 setPointerCapture 会把 pointerup
-            // 重定向到标题栏，click 的目标也随之变成标题栏，按钮收不到点击
-            if (e.target.closest('.mtb-min')) return;
-            drag = { dx: e.clientX - panel.offsetLeft, dy: e.clientY - panel.offsetTop };
+            // 重定向到标题栏，click 的目标也随之变成标题栏，按钮收不到点击。
+            // 同时清掉可能残留的旧拖动状态（触屏滚动判定触发 pointercancel 后
+            // 不会有 pointerup，drag 会残留，后续 tap 的微动就会拿旧偏移瞬移面板）
+            if (e.target.closest('.mtb-min')) { drag = null; return; }
+            // 先把 left/top 固化成当前位置再清掉 right/bottom：若直接只清 right，
+            // 面板 left/right 同时为 auto 失去定位基准，没等到 pointermove 就掉到
+            // 文档流默认位置（左边缘），pointerup 还会把错误位置保存下来
+            const pos = clampPos(panel.offsetLeft, panel.offsetTop);
+            panel.style.left = pos.x + 'px';
+            panel.style.top = pos.y + 'px';
             panel.style.right = 'auto';
+            panel.style.bottom = 'auto';
+            drag = { dx: e.clientX - pos.x, dy: e.clientY - pos.y };
             head.setPointerCapture(e.pointerId);
         });
         head.addEventListener('pointermove', function (e) {
             if (!drag) return;
-            panel.style.left = Math.max(0, e.clientX - drag.dx) + 'px';
-            panel.style.top = Math.max(0, e.clientY - drag.dy) + 'px';
+            const pos = clampPos(e.clientX - drag.dx, e.clientY - drag.dy);
+            panel.style.left = pos.x + 'px';
+            panel.style.top = pos.y + 'px';
         });
-        head.addEventListener('pointerup', function () {
+        const endDrag = function () {
+            if (!drag) return;
             drag = null;
             save(KEY.pos, { x: panel.offsetLeft, y: panel.offsetTop });
-        });
+        };
+        head.addEventListener('pointerup', endDrag);
+        head.addEventListener('pointercancel', endDrag);
     })();
 
     render();
