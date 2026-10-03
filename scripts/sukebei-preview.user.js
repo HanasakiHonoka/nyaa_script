@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name         Sukebei Preview
 // @namespace    https://sukebei.nyaa.si/
-// @version      1.1
-// @description  鼠标悬停在sukebei.nyaa.si种子链接上时显示封面预览（与 Batch Preview 共用封面缓存）
+// @version      1.2
+// @description  鼠标悬停在 sukebei 种子链接上时显示封面预览（与 Batch Preview 共用封面缓存）
 // @match        *://sukebei.nyaa.si/*
+// @match        *://sukebei.nyaa.mom/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
 // @connect      sukebei.nyaa.si
+// @connect      sukebei.nyaa.mom
 // @connect      hentai-covers.site
 // @run-at       document-idle
 // @downloadURL  https://raw.githubusercontent.com/HanasakiHonoka/nyaa_script/main/scripts/sukebei-preview.user.js
@@ -150,7 +152,7 @@
     if (!target) return;
 
     const href = target.href;
-    if (!href || !href.startsWith('https://sukebei.nyaa.si/view/')) return;
+    if (!href || !href.startsWith(location.origin + '/view/')) return;
 
     currentLink = target;
     if (hoverTimer) clearTimeout(hoverTimer);
