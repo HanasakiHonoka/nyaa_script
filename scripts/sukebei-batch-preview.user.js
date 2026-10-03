@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name         Sukebei Batch Preview
 // @namespace    https://sukebei.nyaa.si/
-// @version      1.2
+// @version      1.3
 // @description  在 sukebei 列表页插入封面缩略图列与多选列，支持批量复制磁力链接、按需加载封面（与 Sukebei Preview 共用缓存）
 // @match        *://sukebei.nyaa.si/*
+// @match        *://sukebei.nyaa.mom/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
 // @grant        GM_setClipboard

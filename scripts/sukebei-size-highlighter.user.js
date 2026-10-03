@@ -1,10 +1,12 @@
 // ==UserScript==
 // @name         Sukebei Size Highlighter
 // @namespace    https://sukebei.nyaa.si/
-// @version      1.1
+// @version      1.2
 // @description  Highlight the Size column based on relative magnitude — larger values get more eye-catching colors.
 // @match        *://sukebei.nyaa.si/*
 // @include      *://sukebei.nyaa.si/*
+// @match        *://sukebei.nyaa.mom/*
+// @include      *://sukebei.nyaa.mom/*
 // @run-at       document-idle
 // @grant        none
 // @downloadURL  https://raw.githubusercontent.com/HanasakiHonoka/nyaa_script/main/scripts/sukebei-size-highlighter.user.js
@@ -13,7 +15,7 @@
 
 (function () {
   'use strict';
-console.log("runrun");
+
   const UNIT_BYTES = {
     KiB: 1024,
     MiB: 1024 ** 2,
